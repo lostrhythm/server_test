@@ -1,0 +1,1 @@
+__str__ = "server between redis and db"

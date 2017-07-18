@@ -1,0 +1,11 @@
+eclipse.preferences.version=1
+encoding//data_structure/__init__.py=utf-8
+encoding//data_structure/status.py=utf-8
+encoding//data_structure/strategy.py=utf-8
+encoding//data_structure/task.py=utf-8
+encoding//log/log.py=utf-8
+encoding//server_t1/server_methods_t1.py=utf-8
+encoding//server_t1/server_t1.py=utf-8
+encoding//server_t21/server_t21.py=utf-8
+encoding//utils/data_operations.py=utf-8
+encoding//utils/decorators.py=utf-8

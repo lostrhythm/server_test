@@ -1,0 +1,1 @@
+__str__ = "server bewteen redis and monitor"
