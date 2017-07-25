@@ -143,28 +143,7 @@ def column_add(matrix_dict):
     
     
 if __name__ == '__main__':
-#     complexlist = [[1,2],[3,4],[5,6],7,8,'abc', xrange(3)]
-#     print str(flatten_list(complexlist))
-#     
-#     newlist = eliminate_none_items([None, 1, None, 3])
-#     print newlist
-#     
-#     dictlist = [{'a':1,'b':2}, {'a':3}, {'b':3}]
-#     vallist = vallist_from_dictlist(dictlist, 'a')
-#     print vallist
-#     
-#     origlist = [1,2,3]
-#     newlist = list_to_tuplelist(origlist)
-#     print newlist
-# 
-#     newlist = dictlist_to_tuplelist([{'a':1,'b':2},{'c':3}])
-#     print newlist
-#     
-#     newlist = strip_list([' a ', ' TEST', 1, None, {'a':1,'b':2},{'c':3}, '  cc  '])
-#     print newlist
-    
-    
-    
+
     from collections import Counter
     
     l1 = Counter({'a':1,'b':2})
