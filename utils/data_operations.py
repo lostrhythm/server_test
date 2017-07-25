@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 '''
 Created on 2017年6月20日
 
@@ -6,7 +6,7 @@ Created on 2017年6月20日
 '''
 from copy import deepcopy
 
-def flatten_list(complexlist): # [[],[]] -> []
+def flatten_list(complexlist): 
     plainlist = []
     for i in complexlist:
         if i.__class__ in [list().__class__, set().__class__, dict().__class__]:
@@ -50,7 +50,7 @@ def vallist_from_dictlist(dictlist, aimkey, eli_none = True):
     return vallist
     
     
-def do_split(string, delimiter = ','): # passive to initiative, for using do_split(None or '',)
+def do_split(string, delimiter = ','): 
     if string:
         retlist = string.split(delimiter)
     else:
@@ -92,23 +92,94 @@ def strip_list(origlist):
     return newlist
     
     
-if __name__ == '__main__':
-    complexlist = [[1,2],[3,4],[5,6],7,8,'abc', xrange(3)]
-    print str(flatten_list(complexlist))
     
-    newlist = eliminate_none_items([None, 1, None, 3])
-    print newlist
+def _add(x,y):
+    try:
+        ret = x + y
+    except:
+        ret = {}
+        for k in x:
+            ret[k] = x[k] + y[k]
+            
+    return ret
+      
+def general_add(objects_list):
+    return reduce(_add, objects_list)
     
-    dictlist = [{'a':1,'b':2}, {'a':3}, {'b':3}]
-    vallist = vallist_from_dictlist(dictlist, 'a')
-    print vallist
-    
-    origlist = [1,2,3]
-    newlist = list_to_tuplelist(origlist)
-    print newlist
+def row_add(matrix_dict):
+    AllRowSum_dict = {}
+    for RowKey in matrix_dict:
+        row_dict = matrix_dict[RowKey]
+        
+        rowvalue_list = []
+        for ColumnKey in row_dict:
+            rowvalue_list.append(row_dict[ColumnKey])
+            
+        AllRowSum_dict[RowKey] = general_add(rowvalue_list)
 
-    newlist = dictlist_to_tuplelist([{'a':1,'b':2},{'c':3}])
-    print newlist
+    return AllRowSum_dict
     
-    newlist = strip_list([' a ', ' TEST', 1, None, {'a':1,'b':2},{'c':3}, '  cc  '])
-    print newlist
+    
+def trans(matrix_dict):
+    matrix_t_dict = {}
+    for RowKey in matrix_dict:
+        row_dict = matrix_dict[RowKey]
+        
+        for ColumnKey in row_dict:
+            if not matrix_t_dict.has_key(ColumnKey):
+                matrix_t_dict[ColumnKey] = {} 
+                
+            matrix_t_dict[ColumnKey][RowKey] = row_dict[ColumnKey]
+        
+    return matrix_t_dict
+    
+    
+def column_add(matrix_dict):
+    matrix_t_dict = trans(matrix_dict)
+    return row_add(matrix_t_dict)
+    
+
+    
+    
+    
+if __name__ == '__main__':
+#     complexlist = [[1,2],[3,4],[5,6],7,8,'abc', xrange(3)]
+#     print str(flatten_list(complexlist))
+#     
+#     newlist = eliminate_none_items([None, 1, None, 3])
+#     print newlist
+#     
+#     dictlist = [{'a':1,'b':2}, {'a':3}, {'b':3}]
+#     vallist = vallist_from_dictlist(dictlist, 'a')
+#     print vallist
+#     
+#     origlist = [1,2,3]
+#     newlist = list_to_tuplelist(origlist)
+#     print newlist
+# 
+#     newlist = dictlist_to_tuplelist([{'a':1,'b':2},{'c':3}])
+#     print newlist
+#     
+#     newlist = strip_list([' a ', ' TEST', 1, None, {'a':1,'b':2},{'c':3}, '  cc  '])
+#     print newlist
+    
+    
+    
+    from collections import Counter
+    
+    l1 = Counter({'a':1,'b':2})
+    l2 = Counter({'a':1,'b':2})
+    print general_add([l1,l2])
+    
+    matrix_dict = {
+                   'r1':{'c1':{'t1':1, 't2':1}, 'c2':{'t1':2, 't2':2}},
+                   'r2':{'c1':{'t1':3, 't2':3}, 'c2':{'t1':4, 't2':4}}
+                    
+                   }
+    print row_add(matrix_dict)
+    print trans(matrix_dict)
+    print column_add(matrix_dict)
+    
+    
+
+    

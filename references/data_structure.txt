@@ -1,0 +1,559 @@
+-------------- #crawler & server_t1 ------------------
+
+Task
+    {"Encoding": "utf-8",
+     "TaskStatus": 0,
+     "TaskID": 0,
+     "ParentID": -1,
+     "TaskType": 0,
+     "StrategyID": "TEST",
+     "AdditionParams": "{\\"a\\":2}",
+     "TaskContent": ""}
+
+TaskGroupJson
+    json of [Task_1_json, Task_2_json, Task_3_json, Task_4_json, Task_5_json, Task_6_json, Task_7_json, Task_8_json]
+
+Strategy
+     {"RetryTime": 3,
+     "WaitTime": 1,
+     "CookieUse":false,
+     "StrategyID": "TEST_1",
+     "AdditionParams": "{\\"rules\\":[\\"rule_1\\",
+     \\"rule_2\\"]}",
+     "Timeout": 3,
+     "Encoding": "utf-8",
+     "FragmentalUpload": false,
+     "FragmentalAmount":5,
+     "ContentException":[]}
+
+StrategyGroupJson
+    json of {'TEST_1' : TEST_1_2_json, 'TEST_2' : TEST_2_2_json}
+     
+     
+UserCollectorMap
+    upload status
+    json.dumps([user, machinestatus_dict])
+
+    '["test_vps_ip",
+        {
+            "TEST_2": {"req_failed": 0,
+                    "task_generated": 0,
+                    "task_failed": 0,
+                    "task_cnt": 0,
+                    "req_cnt": 0,
+                    "req_success": 0,
+                    "task_success": 0},
+                    
+            "TEST_1": {"req_failed": 0,
+                    "task_generated": 0,
+                    "task_failed": 0,
+                    "task_cnt": 0,
+                    "req_cnt": 0,
+                    "req_success": 0,
+                    "task_success": 0}
+        }
+    ]'
+
+
+UserInfoJson 
+    json of {'user' : user, 'password' : password}
+    
+ComfirmInfo
+    'Success in registering: %s'%str(user)
+    or
+    ''
+TaskRequestJson
+    # request the task_server for getting TaskGroupJson
+    json of {'strategy_id' : StrategyID, 'tasks_batchsize' : TasksBatchSize, 'user' : User}
+     
+     
+     
+upload_pack
+    generate from many result_pack
+    consist of several 
+    {
+        TaskId_1 : (TaskJson_1, compressed_data, [NewTaskJson]), # TaskStatus_1 -> TaskJson
+        TaskId_2 : (TaskJson_2, compressed_data, [NewTaskJson]),
+        ...
+    }
+    
+UploadPackJson
+    '{"2": ["{\\"Encoding\\": \\"utf-8\\", \\"TaskStatus\\": 0, \\"ParentID\\":-1, \\"TaskID\\": 2, \\"TaskType\\": 0, \\"StrategyID\\": \\"TEST\\", \\"AdditionParams\\": \\"{\\\\\\"a\\\\\\": 2}\\", \\"TaskContent\\": \\"\\"}", "UEsDBBQAAAAIACqy7UqpMMX+CQAAAAcAAAAOAAAAMi9maWxlbmFtZS5qcGdLzs8rSc0rAQBQSwMEFAAAAAgAKrLtStLMnsUUAAAAEgAAAA4AAAAyL25ld3Rhc2suaHRtbMtLLVcoSSzO9swrVsgqzs9TKAYAUEsBAhQAFAAAAAgAKrLtSqkwxf4JAAAABwAAAA4AAAAAAAAAAAAAALaBAAAAADIvZmlsZW5hbWUuanBnUEsBAhQAFAAAAAgAKrLtStLMnsUUAAAAEgAAAA4AAAAAAAAAAAAAALaBNQAAADIvbmV3dGFzay5odG1sUEsFBgAAAAACAAIAeAAAAHUAAAAAAA==", ["NewTaskJson_1", "NewTaskJson_2"]]}'
+     
+Status indices
+    self._StrategyStatusCollector_counter['RT_c'] = 0 # task_cnt
+    self._StrategyStatusCollector_counter['ST_c'] = 0 # task_success
+    self._StrategyStatusCollector_counter['FT_c'] = 0 # task_failed
+    self._StrategyStatusCollector_counter['GT_c'] = 0 # task_generated
+    self._StrategyStatusCollector_counter['TR_c'] = 0 # req_cnt
+    self._StrategyStatusCollector_counter['SR_c'] = 0 # req_success
+    self._StrategyStatusCollector_counter['FR_c'] = 0 # req_failed
+    
+-------------- #redis --------------
+
+new_task_dupefilter
+    set
+    hashlib.sha1().update(TaskJson).hexdigest()
+    
+processed_task_list
+    list
+    TaskJson
+    
+new_task_sset
+    sorted set
+    NewTaskJson
+    
+status_list
+    list
+    UserCollectorMapJson = json.dumps([user, timestamp, machinestatus_dict])
+    
+strategies
+    str
+    StrategyGroupJson
+     {"TEST_2": "{\"RetryTime\": 2, \"WaitTime\": 1, \"CookieUse\":false, \"StrategyID\": \"TEST_2\", \"AdditionParams\": \"{\\\"rules\\\":[\\\"rule_1\\\", \\\"rule_2\\\"]}\", \"Timeout\": 3, \"Encoding\": \"utf-8\", \"FragmentalUpload\": false, \"FragmentalAmount\":5, \"ContentException\":[]}", 
+     "TEST_1": "{\"RetryTime\": 2, \"WaitTime\": 1, \"CookieUse\":false, \"StrategyID\": \"TEST_1\", \"AdditionParams\": \"{\\\"rules\\\":[\\\"rule_1\\\", \\\"rule_2\\\"]}\", \"Timeout\": 3, \"Encoding\": \"utf-8\", \"FragmentalUpload\": false, \"FragmentalAmount\":5, \"ContentException\":[]}"}
+    
+n* task_list:TEST_0
+    list
+    TaskJson
+    
+n* user:test_vps_ip
+    hash
+    field password
+    value 'password'
+        # may have other infomations
+    
+n* user_strategies:test_vps_ip # loaded -> user
+    str
+    UserStrategiesJson = json of ["TEST_0", "TEST_1", "TEST_2"]
+    
+    
+task_timelimit "new add"
+    # in server_t21 check if the tasks lost
+    hash
+    field taskID
+    value generate_time + timeout
+    
+    
+n* user_task:test_vps_ip
+    list
+    'taskID'
+        # when user get tasks, write taskID to this list
+        # server_t21 will use a thread to read this list, so as to update Tasks -3 distributed
+    
+-------------- #Mysql --------------
+
+
+
+
+CREATE TABLE Config(
+	ConfigID INT not null AUTO_INCREMENT PRIMARY KEY,
+	AimObject VARCHAR(100),
+	TaskTimeout INT DEFAULT 3600,
+	GenerateStrategyInterval INT DEFAULT 10,
+  GenerateTaskInterval INT DEFAULT 10,
+  UploadTaskInterval INT DEFAULT 10,
+	UpdateConfigInterval INT DEFAULT 5, -- server_t21 check if the config is modified each 5 seconds
+	GenerateUserInfoInterval INT DEFAULT 10,
+	GenerateUserStrategiesInterval INT DEFAULT 10,
+	CheckTaskDistributionInterval INT DEFAULT 3,
+	GenerateTaskBatchSize INT DEFAULT 50,
+	UploadTaskBatchSize INT DEFAULT 50,
+	TaskListMinSize INT DEFAULT 3,
+	InsertTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
+
+
+
+DESC Config;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE TABLE Tasks(
+	TaskID BIGINT not null AUTO_INCREMENT PRIMARY KEY,
+	StrategyID VARCHAR(100),
+	ParentID BIGINT DEFAULT -1, -- generated from local or file not from parent tasks
+	TaskType INT DEFAULT 0, -- using spider.plain_crawl as default
+	TaskStatus INT DEFAULT -1, -- -1, ungenerated  -2, generated -3, distributed  -4, expired  -5, processed
+	TaskContent VARCHAR(300),
+  Encoding VARCHAR(50), -- usually should be leaved as null
+  AdditionParams VARCHAR(500) DEFAULT '{}', -- form '{...}' constraint
+	Processor Varchar(100), -- filled when -2 -> -3
+	Priority INT DEFAULT 1, -- 0 for test  -- 1 [2, 3, 4, 5, 6, ...]
+  InsertTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
+UPDATE Tasks SET TaskStatus = -2 where TaskID = 1;
+
+CREATE TABLE TasksProcessed(
+	AutoID BIGINT not null AUTO_INCREMENT PRIMARY KEY,
+	TaskID BIGINT not null, -- one task can be generated several time, results will be logged here
+	StrategyID VARCHAR(100),
+	ParentID BIGINT DEFAULT -1,
+	TaskType INT DEFAULT 0,
+	TaskStatus INT, -- 0 1 2
+	TaskContent VARCHAR(300),
+  Encoding VARCHAR(50),
+  AdditionParams VARCHAR(500), -- form '{...}' constraint
+	Processor Varchar(100), -- filled when -2 -> -3
+	Priority INT DEFAULT 1,
+  InsertTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
+ALTER TABLE TasksProcessed ADD Priority INT DEFAULT 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE TABLE Strategies(
+	AutoID INT not null AUTO_INCREMENT PRIMARY KEY,
+	StrategyID VARCHAR(100) UNIQUE,
+  WaitTime INT,
+  RetryTime INT,
+  Timeout INT,
+	Encoding VARCHAR(50) DEFAULT 'utf-8',
+  FragmentalUpload TINYINT(1) DEFAULT 0, -- need to be transformed into boolen when generate StrategyGroupJson
+	FragmentalAmount INT DEFAULT 2,
+	ContentException VARCHAR(300), -- form '..,..,..' constraint,   will be transformed by ''.split in server_t21
+	AdditionParams VARCHAR(300) DEFAULT '{}', -- form '{...}' constraint
+	CookieUse TINYINT(1) DEFAULT 0 -- need to be transformed into boolen when generate StrategyGroupJson
+);
+
+
+
+
+
+
+
+
+
+
+CREATE TABLE UserInfo(
+	AutoID INT not null AUTO_INCREMENT PRIMARY KEY,
+	UserID Varchar(100) UNIQUE,
+	Password Varchar(100) DEFAULT '' -- cause in crawler_test_db password will never be None, at least ''
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE TABLE UserStrategies(
+	AutoID INT not null AUTO_INCREMENT PRIMARY KEY,
+	UserID Varchar(100) UNIQUE,
+	LoadedStrategies Varchar(300) -- need to be transformed into list when generate LoadedStrategiesJson
+);
+
+
+
+
+
+
+
+
+  
+
+        
+    
+
+    
+--------------- #server_t21 ----------------
+ConfigDict
+    {
+        u'UploadTaskInterval': 10, 
+        u'GenerateUserInfoInterval': 10, 
+        u'GenerateTaskInterval': 10, 
+        u'UpdateConfigInterval': 5, 
+        u'AimObject': u'server_t21', 
+        u'GenerateUserStrategiesInterval': 10, 
+        u'TaskTimeout': 3600, 
+        u'GenerateStrategyInterval': 10, 
+        u'InsertTime': datetime.datetime(2017, 7, 15, 17, 41, 51), 
+        u'ConfigID': 1
+    }
+
+
+
+"server_t21 <-> redis datastructure transform"
+    SGTaskDict <-> TaskIns
+        AdditionParams
+            '{}' <-> {}
+            
+    SGStrategyDict <-> StrategyIns
+        AdditionParams
+            '{}' <-> {}
+        FragmentalUpload
+            0/1 <-> T/F
+        CookieUse
+            0/1 <-> T/F
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+--------------- #server_t22 ----------------
+            
+    ["test_vps_ip_1", 
+    
+    1500651747, 
+    
+    {
+    "TEST_2": {"req_failed": 0, "task_generated": 0, "task_failed": 0, "task_cnt": 0, "req_cnt": 0, "req_success": 0, "task_success": 0}, 
+    "TEST_1": {"req_failed": 0, "task_generated": 0, "task_failed": 0, "task_cnt": 0, "req_cnt": 5, "req_success": 4, "task_success": 0}
+
+    }]
+    
+    
+    ["test_vps_ip_2", 
+    
+    1500651747, 
+    
+    {
+    "TEST_2": {"req_failed": 0, "task_generated": 0, "task_failed": 0, "task_cnt": 0, "req_cnt": 0, "req_success": 0, "task_success": 0}, 
+    "TEST_1": {"req_failed": 0, "task_generated": 0, "task_failed": 0, "task_cnt": 0, "req_cnt": 5, "req_success": 4, "task_success": 0}
+
+    }]
+    
+
+    ...
+    
+    ->
+        "Detailed_matrix_dict"
+        level_1 matrix_dict 
+        most detailed
+    
+    {
+    u'MACHINE.ip_1': 
+        {
+        u'STRATEGY.TEST_1': 
+            {u'req_success': 1, u'req_cnt': 1, u'req_failed': 0, u'task_cnt': 0, u'task_generated': 0, u'task_failed': 0, u'task_success': 0}, 
+        u'STRATEGY.TEST_2': 
+            {u'req_success': 0, u'req_failed': 0, u'task_cnt': 0, u'req_cnt': 0, u'task_generated': 0, u'task_failed': 0, u'task_success': 0})
+        }, 
+    u'MACHINE.ip_3': 
+        {
+        u'STRATEGY.TEST_1': 
+            {u'req_success': 3, u'req_cnt': 3, u'req_failed': 0, u'task_cnt': 0, u'task_generated': 0, u'task_failed': 0, u'task_success': 0}, 
+        u'STRATEGY.TEST_2': 
+            {u'req_success': 0, u'req_failed': 0, u'task_cnt': 0, u'req_cnt': 0, u'task_generated': 0, u'task_failed': 0, u'task_success': 0}    
+        }, 
+    u'MACHINE.ip_2': 
+        {
+        u'STRATEGY.TEST_1': 
+            {u'req_success': 2, u'req_cnt': 2, u'req_failed': 0, u'task_cnt': 0, u'task_generated': 0, u'task_failed': 0, u'task_success': 0}, 
+        u'STRATEGY.TEST_2': 
+            {u'req_success': 0, u'req_failed': 0, u'task_cnt': 0, u'req_cnt': 0, u'task_generated': 0, u'task_failed': 0, u'task_success': 0}
+        }
+    }
+
+    
+    
+    ->
+        level_2 matrix_dict 
+        
+    "Machine_matrix_dict"
+    {
+    u'MACHINE.ip_1': 
+        {u'task_generated': 0, u'task_cnt': 0, u'task_failed': 0, u'req_failed': 0, u'req_cnt': 1, u'req_success': 1, u'task_success': 0}, 
+    u'MACHINE.ip_3': 
+        {u'task_generated': 0, u'task_cnt': 0, u'task_failed': 0, u'req_failed': 0, u'req_cnt': 3, u'req_success': 3, u'task_success': 0}, 
+    u'MACHINE.ip_2': 
+        {u'task_generated': 0, u'task_cnt': 0, u'task_failed': 0, u'req_failed': 0, u'req_cnt': 2, u'req_success': 2, u'task_success': 0}
+    }
+
+    
+    "Strategy_matrix_dict"
+    {
+    u'STRATEGY.TEST_1': 
+        {u'task_generated': 0, u'task_cnt': 0, u'task_failed': 0, u'req_failed': 0, u'req_cnt': 6, u'req_success': 6, u'task_success': 0},
+    u'STRATEGY.TEST_2': 
+        {u'task_generated': 0, u'task_cnt': 0, u'task_failed': 0, u'req_failed': 0, u'req_cnt': 0, u'req_success': 0, u'task_success': 0}
+    }
+    
+    
+    ->
+        "Plain_matrix_dict"
+        level_3 matrix_dict
+        
+    {
+    u'task_generated': 0, 
+    u'task_cnt': 0, 
+    u'task_failed': 0, 
+    u'req_failed': 0, 
+    u'req_cnt': 6, 
+    u'req_success': 6, 
+    u'task_success': 0
+    }
+
+
+    
+    
+统计项：
+    分机器分策略
+        n: number of strategies
+            # from StrategySpiderMap_dict, determined by config.conf
+        m: number of machines
+        
+        # raw
+        "pattern M\..*?\.S\..*?_c"
+        接收任务
+            # MACHINE.test_vps_ip.STRATEGIES.TEST_0.ReceivedTasks_cnt * nm
+            M.test_vps_ip.S.TEST_0.RT_c * nm
+        成功任务
+            # MACHINE.test_vps_ip.STRATEGIES.TEST_0.SuccessfulTasks_cnt * nm
+            M.test_vps_ip.S.TEST_0.ST_c * nm
+        失败任务
+            # MACHINE.test_vps_ip.STRATEGIES.TEST_0.FailedTasks_cnt * nm
+            M.test_vps_ip.S.TEST_0.FT_c * nm
+        生成任务
+            # MACHINE.test_vps_ip.STRATEGIES.TEST_0.GeneratedTasks_cnt * nm
+            M.test_vps_ip.S.TEST_0.GT_c * nm
+        总请求
+            # MACHINE.test_vps_ip.STRATEGIES.TEST_0.TotalRequests_cnt * nm
+            M.test_vps_ip.S.TEST_0.TR_c * nm
+        成功请求
+            # MACHINE.test_vps_ip.STRATEGIES.TEST_0.SuccessfulRequests_cnt * nm
+            M.test_vps_ip.S.TEST_0.SR_c * nm
+        失败请求
+            # MACHINE.test_vps_ip.STRATEGIES.TEST_0.FailedRequests_cnt * nm
+            M.test_vps_ip.S.TEST_0.FR_c * nm
+
+            
+    分机器不分策略
+        # derived
+        "pattern M\..*?\.SA\..*?_c"
+        接收任务
+            # MACHINE.test_vps_ip.STRATEGIESSUM.ReceivedTasks_cnt * m
+            M.test_vps_ip.SA.RT_c * m # A denotes aggregrate
+        成功任务
+            # MACHINE.test_vps_ip.STRATEGIESSUM.SuccessfulTasks_cnt  * m
+            M.test_vps_ip.SA.ST_c * m
+        失败任务
+            # MACHINE.test_vps_ip.STRATEGIESSUM.FailedTasks_cnt  * m
+            M.test_vps_ip.SA.FT_c * m
+        生成任务
+            # MACHINE.test_vps_ip.STRATEGIESSUM.GeneratedTasks_cnt * nm
+            M.test_vps_ip.SA.GT_c * m
+        成功请求
+            # MACHINE.test_vps_ip.STRATEGIESSUM.TRequests_cnt  * m
+            M.test_vps_ip.SA.TR_c * m
+        成功请求
+            # MACHINE.test_vps_ip.STRATEGIESSUM.SuccessfulRequests_cnt  * m
+            M.test_vps_ip.SA.SR_c * m
+        失败请求
+            # MACHINE.test_vps_ip.STRATEGIESSUM.FailedRequests_cnt  * m
+            M.test_vps_ip.SA.FR_c * m
+        
+    分策略不分机器
+        # derived
+        "pattern S\..*?\.MA\..*?_c"
+        接收任务
+            # STRATEGY.TEST_0.MACHINESSUM.ReceivedTasks_cnt * n
+            S.TEST_0.MA.RT_c * n
+        成功任务
+            # STRATEGY.TEST_0.MACHINESSUM.SuccessfulTasks_cnt * n
+            S.TEST_0.MA.ST_c * n
+        失败任务
+            # STRATEGY.TEST_0.MACHINESSUM.FailedTasks_cnt * n
+            S.TEST_0.MA.FT_c * n
+        生成任务
+            # STRATEGY.TEST_0.MACHINESSUM.GeneratedTasks_cnt * n
+            S.TEST_0.MA.GT_c * n
+        总请求
+            # STRATEGY.TEST_0.MACHINESSUM.TotalRequests_cnt * n
+            S.TEST_0.MA.TR_c * n
+        成功请求
+            # STRATEGY.TEST_0.MACHINESSUM.SuccessfulRequests_cnt * n
+            S.TEST_0.MA.SR_c * n
+        失败请求
+            # STRATEGY.TEST_0.MACHINESSUM.FailedRequests_cnt * n
+            S.TEST_0.MA.FR_c * n
+            
+    不分策略不分机器： 总是要检查
+        # derived
+        "pattern T\..*?_c"
+        接收任务
+            # Total.ReceivedTasks_cnt
+            T.RT_c
+        成功任务
+            # Total.SuccessfulTasks_cnt
+            T.ST_c
+        失败任务
+            # Total.FailedTasks_cnt * n
+            T.FT_c
+        生成任务
+            # STRATEGY.TEST_0.MACHINESSUM.GeneratedTasks_cnt * n
+            T.GT_c
+        总请求
+            # Total.TotalRequests_cnt * n
+            T.TR_c
+        成功请求
+            # Total.SuccessfulRequests_cnt * n
+            T.SR_c
+        失败请求
+            # Total.FailedRequests_cnt * n
+            T.FR_c
+        

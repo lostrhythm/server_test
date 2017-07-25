@@ -1,16 +1,16 @@
-# from scrapy-redis
+# from scrapy-redis
 
 from log.log import get_logger
 import defaults
 import traceback
 import hashlib
 import connection
-# import time
+
 
 
 
 class New_Task_DupeFilter(object):
-    
+
     def __init__(self, RedisIns, logger = None):
         
         self.logger = logger 
@@ -42,7 +42,7 @@ class New_Task_DupeFilter(object):
         except Exception as e:
             self.logger.warn(traceback.format_exc(e))
             
-        return added == 0 # if seen return True
+        return added == 0 
 
 
 

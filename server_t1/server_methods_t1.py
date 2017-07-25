@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 '''
 Created on 2017年7月12日
 
@@ -15,8 +15,7 @@ import os
 import base64
 import time
 import traceback
-
-
+
 
 
 class Server_Methods(object):
@@ -45,14 +44,16 @@ class Server_Methods(object):
     
     
     def do_register_t1(self, UserInfoJson):
-        UserInfo_dict = json.loads(UserInfoJson) # {'user' : user, 'password' : password}
+        UserInfo_dict = json.loads(UserInfoJson) 
         
         user = UserInfo_dict['user']
-        password = UserInfo_dict['password']
+        password = UserInfo_dict['password'] 
+                                             
         password_r = None
         
         try:
-            password_r = self.server.hget('user:%s'%user, 'password')
+            password_r = self.server.hget('user:%s'%user, 'password') 
+                                                                     
         except Exception as e:
             self.logger.warn(traceback.format_exc(e))
 
@@ -69,10 +70,10 @@ class Server_Methods(object):
         
             
     def get_strategy_t1(self):
-        # get from str
+        
         StrategyGroupJson = ''
         try:
-            StrategyGroupJson = self.server.get('strategies') # when the key is not exist return None
+            StrategyGroupJson = self.server.get('strategies') 
         except Exception as e:
             self.logger.warn(traceback.format_exc(e))
             
@@ -85,7 +86,7 @@ class Server_Methods(object):
     
     
     def get_task_t1(self, TaskRequestJson):
-        # get from list
+        
         TaskRequest_dict = json.loads(TaskRequestJson)
         
         StrategyID = TaskRequest_dict.get('strategy_id')
@@ -95,13 +96,10 @@ class Server_Methods(object):
         TaskGroupList = []
         pipe = self.server.pipeline()
         
-        # check if the StrategyID is loaded to User in db
+        
         try:
             UserStrategiesJson = self.server.get('user_strategies:%s'%User) or '[]'
-            # TEST
-            # print UserStrategiesJson
-            
-            UserStrategies_List = strip_list( json.loads(UserStrategiesJson) ) # eliminate spaces at the head and tail of string elements
+            UserStrategies_List = strip_list( json.loads(UserStrategiesJson) ) 
             if StrategyID in UserStrategies_List:
                 self.logger.info('Strategy %s is loaded to user %s'%(StrategyID, User))
                 StrategyLoaded = True
@@ -116,21 +114,21 @@ class Server_Methods(object):
         
         if StrategyLoaded:
             
-            # get Tasks according to the StrategyID
+            
             try:
                 pipe.multi()
                 for _ in xrange(TasksBatchSize):
-                    pipe.rpop('task_list:%s'%StrategyID) # if strategy disactived, the correspond task_list:strategyID will be destories, so there is a None 
-                TaskGroupList = eliminate_placeholders(eliminate_none_items( pipe.execute() )) # eliminated the None items and placeholders, consists of jsons
+                    pipe.rpop('task_list:%s'%StrategyID) 
+                TaskGroupList = eliminate_placeholders(eliminate_none_items( pipe.execute() )) 
             except Exception as e:
                 self.logger.warn(traceback.format_exc(e))
             
-            # record taskID s the user take away, use for updating processor in table Tasks
+            
             try:
                 pipe.multi()
                 for TaskJson in TaskGroupList:
                     TaskIns = Task.load_task(TaskJson)
-                    pipe.lpush('user_tasks:%s'%User, TaskIns.TaskID) # user_task:test_vps_ip, [TaskID]
+                    pipe.lpush('user_tasks:%s'%User, TaskIns.TaskID) 
                 pipe.execute()
             except Exception as e:
                 self.logger.warn(traceback.format_exc(e))
@@ -142,15 +140,16 @@ class Server_Methods(object):
                 TaskGroupJson = ''
                 
         else:
-            TaskGroupJson = '' # the StrategyID is not loaded to User in db
+            TaskGroupJson = '' 
                 
             
         self.logger.info('get %s tasks: %s'%(str(len(TaskGroupList)), TaskGroupJson)) 
-        return TaskGroupJson # '[TaskJson_1, TaskJson_2 ...]' or ''
+        return TaskGroupJson 
     
     
     
     def _store_file(self, TaskID, ResultPack_zip):
+        
         try:
             if not os.path.isdir('./results'):
                 os.mkdir('./results')
@@ -164,13 +163,13 @@ class Server_Methods(object):
                
                          
     def _upload_tasks(self, TaskJsonList):
-        # to processed_task_list
+        
         pipe = self.server.pipeline()
         try:
             pipe.multi()
             
             for TaskJson in TaskJsonList:
-                pipe.lpush(defaults.PROCESSED_TASK_LIST, TaskJson) # return list len
+                pipe.lpush(defaults.PROCESSED_TASK_LIST, TaskJson) 
                 
             pipe.execute()
             
@@ -179,18 +178,19 @@ class Server_Methods(object):
 
 
     def _upload_new_tasks(self, NewTaskJsonListList):
-        NewTaskJsonList = flatten_list(NewTaskJsonListList) # [[..],[..], ...] -> [....]  
+        NewTaskJsonList = flatten_list(NewTaskJsonListList) 
         pipe = self.server.pipeline()
         try:
             pipe.multi()
             
             for NewTaskJson in NewTaskJsonList:
                 if self.New_Task_DupeFilte_Ins.task_seen(NewTaskJson) == False:
-                    pipe.execute_command('ZADD', defaults.NEW_TASK_SSET, 'NX', time.time(), NewTaskJson)
+                    
+                    pipe.execute_command('ZADD', defaults.NEW_TASK_SSET, 'NX', time.time(), NewTaskJson) 
                 else:
                     self.logger.info('new_task was seen: %s'%NewTaskJson)
                     
-            cnt_list = map(int, pipe.execute()) # ['1','1', ...] -> [1,1, ...]
+            cnt_list = map(int, pipe.execute()) 
             self.logger.info('new_task added: %s'%str(sum(cnt_list)))
             
         except Exception as e:
@@ -202,20 +202,19 @@ class Server_Methods(object):
         UploadPack = json.loads(UploadPackJson)
         self.logger.debug(repr(UploadPack))
         
-        TaskJsonList = []
-        NewTaskJsonListList = []
+        TaskJsonList = [] 
+        NewTaskJsonListList = [] 
         
         for TaskID in UploadPack:
             TaskJson, ResultPack_zip_b64, NewTaskJsonList = UploadPack[TaskID]
             ResultPack_zip = base64.b64decode(ResultPack_zip_b64)
-            self._store_file(TaskID, ResultPack_zip) # store files
+            self._store_file(TaskID, ResultPack_zip) 
 
             TaskJsonList.append(TaskJson)
             NewTaskJsonListList.append(NewTaskJsonList)
             
-
-        self._upload_tasks(TaskJsonList) # lpush processed tasks
-        self._upload_new_tasks(NewTaskJsonListList) # zadd new tasks
+        self._upload_tasks(TaskJsonList) 
+        self._upload_new_tasks(NewTaskJsonListList) 
         
             
         ComfirmInfo = 'upload_server received TaskID: %s'%str(UploadPack.keys())
@@ -227,7 +226,7 @@ class Server_Methods(object):
 
     def upload_status_t1(self, UserCollectorMapJson):
         try:
-            self.server.lpush(defaults.STATUS_LIST, UserCollectorMapJson) # jsons of [user, MachineStatusCollector_dict]
+            self.server.lpush(defaults.STATUS_LIST, UserCollectorMapJson) 
         except Exception as e:
             self.logger.warn(traceback.format_exc(e))
         

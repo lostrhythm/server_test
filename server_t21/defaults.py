@@ -1,11 +1,6 @@
-# from scrapy-redis
+# from scrapy-redis
 import redis
-
-# act like global basic config
-
-# TODO: using configparser to read from config file
-
-# for instantiating the redis Ins
+
 REDIS_CLS = redis.StrictRedis
 REDIS_ENCODING = 'utf-8'
 REDIS_PARAMS = {

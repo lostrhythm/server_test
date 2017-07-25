@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 '''
 Created on 2017年6月19日
 
@@ -13,14 +13,12 @@ logger = get_logger('Task')
 
 class Task():
     def __init__(self, TaskID = 0, StrategyID = 'TEST', ParentID = -1, TaskType = 0, TaskContent = '', TaskStatus = 0, AdditionParams = {}, Encoding = None, Processor = '', Priority = 1):
-       
-        
-        self.TaskID = TaskID # -1 means spider_generate tasks
+        self.TaskID = TaskID 
         self.StrategyID = StrategyID
-        self.ParentID = ParentID # new added, stands for the taskID of the task, which generated this one
-        self.TaskType = TaskType # use self.TaskType
+        self.ParentID = ParentID 
+        self.TaskType = TaskType 
         self.TaskContent = TaskContent
-        self.TaskStatus = TaskStatus # use self.TaskStatus
+        self.TaskStatus = TaskStatus 
         self.AdditionParams = AdditionParams
         self.Encoding = Encoding
         self.Processor = Processor
@@ -39,7 +37,7 @@ class Task():
         
         TaskContent = TaskDict.get('TaskContent') or ''
         AdditionParams = json.loads(TaskDict.get('AdditionParams') or '{}', encoding = LocalEncoding)
-        Encoding = TaskDict.get('Encoding') # when None, spider using encoding of strategy
+        Encoding = TaskDict.get('Encoding') 
         Processor = TaskDict.get('Processor') or ''
         Priority = TaskDict.get('Priority') or 1
         
@@ -56,11 +54,11 @@ class Task():
         StrategyID = SGTaskDict['StrategyID']
         ParentID = SGTaskDict['ParentID']
         TaskType = SGTaskDict['TaskType']
-        TaskStatus = SGTaskDict['TaskStatus'] # will be recorded in Table TasksProcessed
+        TaskStatus = SGTaskDict['TaskStatus'] 
         
         TaskContent = SGTaskDict.get('TaskContent') or ''
         AdditionParams = json.loads(SGTaskDict.get('AdditionParams') or '{}', encoding = LocalEncoding)
-        Encoding = SGTaskDict.get('Encoding') # when None, spider using encoding of strategy
+        Encoding = SGTaskDict.get('Encoding') 
         Processor = SGTaskDict.get('Processor') or ''
         Priority = SGTaskDict.get('Priority') or 1
         
@@ -76,7 +74,7 @@ class Task():
         [TaskDict.pop(key) for key in self.__dict__ if key[0] == '_']
         TaskDict['AdditionParams'] = json.dumps(self.__dict__['AdditionParams'], encoding = LocalEncoding)
         
-        TaskJson = json.dumps(TaskDict, encoding = LocalEncoding) # encoding = self.Encoding
+        TaskJson = json.dumps(TaskDict, encoding = LocalEncoding) 
         return TaskJson
     
     
@@ -91,7 +89,7 @@ class Task():
         SGTaskDict['TaskStatus'] = self.TaskStatus
         SGTaskDict['TaskContent'] = self.TaskContent
         SGTaskDict['Encoding'] = self.Encoding
-        SGTaskDict['AdditionParams'] = json.dumps(self.AdditionParams or {}, encoding = LocalEncoding)
+        SGTaskDict['AdditionParams'] = json.dumps(self.AdditionParams or {}, encoding = LocalEncoding) 
         SGTaskDict['Processor'] = self.Processor
         SGTaskDict['Priority'] = self.Priority
         
@@ -108,6 +106,7 @@ if __name__ == '__main__':
     print t_1.TaskType
     print t_2.TaskStatus
     
+    
     TaskJson_3 = '{"Processor": "user", "Encoding": null, "TaskStatus": 0, "ParentID": -1, "TaskID": 0, "TaskType": 0, "StrategyID": "TEST", "AdditionParams": "{\\"a\\":2}", "TaskContent": ""}'
     t_3 = Task.load_task(TaskJson_3)
     t_3_json = t_3.get_json()
@@ -115,3 +114,4 @@ if __name__ == '__main__':
     print repr(t_3_json)
     
     print t_3.get_sgdict()
+     

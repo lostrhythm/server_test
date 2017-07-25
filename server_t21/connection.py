@@ -1,4 +1,4 @@
-# from scrapy-redis
+# from scrapy-redis
 import mysql.connector
 import defaults
 from log.log import get_logger
@@ -24,7 +24,8 @@ def get_redis_from_default():
     
 def get_myconn_from_default():
     params = defaults.MYSQL_PARAMS.copy()
-    MySqlConn = mysql.connector.connect(**params)
+    MySqlConn = mysql.connector.connect(**params) 
+                                                  
     return MySqlConn
 
     

@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 '''
 Created on 2017年7月15日
 
@@ -24,27 +24,28 @@ import json
 
 class Server_T21():
     def __init__(self, RedisIns, MySqlConn, logger = None):
-        self.logger = logger or get_logger('Server_Methods_t21')
+        self.logger = logger or get_logger('Server_Methods_t21', True)
         self.server = RedisIns
-        self.conn = MySqlConn
-        self.cursor = MySqlConn.cursor(dictionary=True)
-        self.lock = Lock()
-        self.StrategyGroupDict = {}
+        self.conn = MySqlConn 
+        self.cursor = MySqlConn.cursor(dictionary=True) 
+        self.lock = Lock() 
+        self.StrategyGroupDict = {} 
         
-        self.ConfigDict = {}
+        self.ConfigDict = {} 
         self.load_config()
         
         
         
     def execute_sql(self, sqline, data = []):
+        
         sqlresultlist = []
         self.lock.acquire()
         if not data:
-            # single sqline
+            
             self.cursor.execute(sqline)
             sqlresultlist = self.cursor.fetchall()
         else:
-            # multi sqline s
+            
             if 'SELECT' in sqline or 'select' in sqline:
                 for item in data:
                     tempsqline = sqline%item
@@ -53,21 +54,22 @@ class Server_T21():
                     
             if 'UPDATE' in sqline or 'update' in sqline or 'INSERT' in sqline or 'insert' in sqline:
                 if not data[0].__class__ == tuple().__class__:
-                    data = list_to_tuplelist(data)
+                    data = list_to_tuplelist(data)  
                     
-                self.cursor.executemany(sqline, data)
+                self.cursor.executemany(sqline, data) 
 
         self.lock.release()
         return sqlresultlist
     
         
     def get_redis_keys(self, RedisPattern, HashKey = None):
+        
         keyslist = []
         PrevRedisCursor = 0
         while True:
             if not HashKey:
                 CurRedisCursor_long, subkeyslist = self.server.scan(PrevRedisCursor, RedisPattern, count = 50)
-                CurRedisCursor = int(CurRedisCursor_long)
+                CurRedisCursor = int(CurRedisCursor_long) 
                 if CurRedisCursor == 0:
                     keyslist.extend(subkeyslist)
                     break
@@ -78,7 +80,7 @@ class Server_T21():
             else:
                 if HashKey.__class__ == str().__class__:
                     CurRedisCursor_long, subfieldsdict = self.server.hscan(HashKey, PrevRedisCursor, RedisPattern, count = 2)
-                    CurRedisCursor = int(CurRedisCursor_long) # scan always return (long_int, list)
+                    CurRedisCursor = int(CurRedisCursor_long) 
                     if CurRedisCursor == 0:
                         keyslist.extend(subfieldsdict.keys())
                         break
@@ -93,6 +95,7 @@ class Server_T21():
         
         
     def load_config(self):
+        
         try:
             sqline = "SELECT * FROM Config WHERE AimObject = 'server_t21'"
             sqlresultlist = self.execute_sql(sqline)
@@ -138,7 +141,7 @@ class Server_T21():
                     self.logger.info('User Information are not changed')
                 else:
                     self.logger.info('User Information changed')
-                    PrevUserInfoList = CurUserInfoList # local cache []
+                    PrevUserInfoList = CurUserInfoList 
                     
                     RedisUserInfoKeyList = self.get_redis_keys('user:*')
                     
@@ -149,7 +152,7 @@ class Server_T21():
                         pipe.delete(UserInfoKey)
                     
                     for UserInfo in CurUserInfoList:
-                        pipe.hset('user:%s'%UserInfo['UserID'], 'password', UserInfo['Password'] or '') # Password never be None, at least ''; 'or' here is for the accidently delete of password in db 
+                        pipe.hset('user:%s'%UserInfo['UserID'], 'password', UserInfo['Password'] or '') 
                                            
                     pipe.execute()
                     
@@ -164,6 +167,7 @@ class Server_T21():
     
     
     def generate_user_strategies(self):
+        
         sqline = 'select * from UserStrategies'
         PrevUserStrategiesList = []
         
@@ -177,7 +181,7 @@ class Server_T21():
                     self.logger.info('User Strategies are not changed')
                 else:
                     self.logger.info('User Strategies changed')
-                    PrevUserStrategiesList = CurUserStrategiesList # local cache []
+                    PrevUserStrategiesList = CurUserStrategiesList 
                     
                     UserStrategiesKeyList = self.get_redis_keys('user_strategies:*')
                     
@@ -190,7 +194,7 @@ class Server_T21():
                     for UserStrategies in CurUserStrategiesList:
                         UserStrategiesList = UserStrategies['LoadedStrategies'].split(',')
                         UserStrategiesJson = json.dumps(UserStrategiesList, 'utf-8')
-                        pipe.set('user_strategies:%s'%UserStrategies['UserID'], UserStrategiesJson) # Password never be None, at least ''; 'or' here is for the accidently delete of password in db 
+                        pipe.set('user_strategies:%s'%UserStrategies['UserID'], UserStrategiesJson) 
                                            
                     pipe.execute()
                     
@@ -214,7 +218,7 @@ class Server_T21():
             pipe = self.server.pipeline()
             pipe.multi()
             for TaskID in TaskIDList:
-                pipe.hdel('task_timelimit', TaskID) # delete the task_list
+                pipe.hdel('task_timelimit', TaskID) 
             pipe.execute()
             
             self.logger.info('delete from task_timelimit taskID: %s'%str(TaskIDList))
@@ -251,14 +255,14 @@ class Server_T21():
             self.logger.warn(traceback.format_exc(e))
 
     
-    def _delete_elistrategy_tasklist(self, EliStrategIDList = []): # eliminated strategID s
+    def _delete_elistrategy_tasklist(self, EliStrategIDList = []): 
         try:
             
             pipe = self.server.pipeline()
             pipe.multi()
             for EliStrategyID in EliStrategIDList:
-                self._reset_undistributed_tasks_status(EliStrategyID) # reset task status for the elistrategy
-                pipe.delete('task_list:%s'%EliStrategyID) # delete the task_list
+                self._reset_undistributed_tasks_status(EliStrategyID) 
+                pipe.delete('task_list:%s'%EliStrategyID) 
             pipe.execute()
             
             self.logger.info('delete task list for eliminated strategies:%s'%str(EliStrategIDList))
@@ -268,17 +272,17 @@ class Server_T21():
     
     def generate_strategies(self):
         sqline = 'select * from Strategies'
-
+        
         while True:
             try:
-                StrategiesList = self.execute_sql(sqline) # [{},...]
+                StrategiesList = self.execute_sql(sqline) 
                 self.logger.info('Strategies got:%s'%str(StrategiesList))
                 
-                StrategyGroupDict_cur = {} # ['StrategyID':'StrategyJson', ...]
+                StrategyGroupDict_cur = {} 
                 
-                
-                for SGStrategyDict in StrategiesList: # sql get strategy dict
-                    
+                
+                for SGStrategyDict in StrategiesList: 
+                    
                     StrategyIns = Strategy.load_strategy_from_sqlresult(SGStrategyDict)
                     StrategyJson = StrategyIns.get_json()
                     StrategyGroupDict_cur[StrategyIns.StrategyID] = StrategyJson
@@ -289,9 +293,9 @@ class Server_T21():
                 StrategyIDList = StrategyGroupDict_cur.keys()
                 self.logger.info('Strategies genereated: %s'%str(StrategyIDList))
                 
-                
-                EliStrategIDList = list(self.StrategyGroupDict.viewkeys() - StrategyGroupDict_cur.viewkeys())
+                EliStrategIDList = list(set(self.StrategyGroupDict.keys()) - set(StrategyGroupDict_cur.keys()))
                 self.StrategyGroupDict = StrategyGroupDict_cur
+                
                 
                 self._delete_elistrategy_tasklist(EliStrategIDList)
                 
@@ -307,24 +311,24 @@ class Server_T21():
         sqline_w = 'update Tasks set TaskStatus = -4 where TaskID = %s;'
         
         try:
-            # check task timeout
+            
             CurTimeStamp = time()
             ExpiredTaskIDList = []
-            GeneratedTaskIDList_orig = self.get_redis_keys('*', 'task_timelimit')
+            GeneratedTaskIDList_orig = self.get_redis_keys('*', 'task_timelimit') 
             
-            for GeneratedTaskID in GeneratedTaskIDList_orig: 
+            for GeneratedTaskID in GeneratedTaskIDList_orig: 
                 TaskTimelimit = self.server.hget('task_timelimit', GeneratedTaskID)
-                if CurTimeStamp > float(TaskTimelimit):
+                if CurTimeStamp > float(TaskTimelimit): 
                     ExpiredTaskIDList.append(GeneratedTaskID)
                    
-            pipe = self.server.pipeline()
+            pipe = self.server.pipeline()  
             pipe.multi()
             for ExGeneratedTaskID in ExpiredTaskIDList:
                 pipe.hdel('task_timelimit', ExGeneratedTaskID)
             pipe.execute()
               
             if ExpiredTaskIDList:
-                self.execute_sql(sqline_w, ExpiredTaskIDList)
+                self.execute_sql(sqline_w, ExpiredTaskIDList) 
                 
             self.logger.info('Expired Tasks: %s'%str(ExpiredTaskIDList))
 
@@ -337,25 +341,24 @@ class Server_T21():
     def generate_tasks(self):
         sqline_r = 'select * from Tasks where TaskStatus = -1 and StrategyID = \'%s\' order by Priority desc limit 0, %s;'
         sqline_w_1 = 'update Tasks set TaskStatus = -2 where TaskID = %s;'
-        sqline_w_2 = 'update Tasks set TaskStatus = -3 where TaskID = %s and Processor is not NULL;' # for restore status -3
-        sqline_w_3 = 'update Tasks set TaskStatus = -2 where TaskID = %s and Processor is NULL;' # restore status -2
+        sqline_w_2 = 'update Tasks set TaskStatus = -3 where TaskID = %s and Processor is not NULL;' 
+        sqline_w_3 = 'update Tasks set TaskStatus = -2 where TaskID = %s and Processor is NULL;' 
         
         while True:
             try:
-                self._deal_expire_tasks() # check and clean task_timelimit
+                self._deal_expire_tasks() 
                 
-                GenerateTaskBatchSize = str(self.ConfigDict['GenerateTaskBatchSize']) # put here due to listening to the change in table Config
-                StrategyIDList = self.StrategyGroupDict.keys() # all active strategies
+                GenerateTaskBatchSize = str(self.ConfigDict['GenerateTaskBatchSize']) 
+                StrategyIDList = self.StrategyGroupDict.keys() 
                 GenTasksList = []
-                
                 
                 for StrategyID in StrategyIDList:
                     sqline_temp = sqline_r % (StrategyID, GenerateTaskBatchSize)
                     
-                    StrategyTaskListLen = self.server.llen('task_list:%s'%StrategyID) # len of task_list:strategy
+                    StrategyTaskListLen = self.server.llen('task_list:%s'%StrategyID) 
                     if StrategyTaskListLen < self.ConfigDict['TaskListMinSize']:
                         
-                        StrGenTasksList = self.execute_sql(sqline_temp) # strategy generate task, just for one strategy
+                        StrGenTasksList = self.execute_sql(sqline_temp) 
                         GenTasksList.extend(StrGenTasksList)
                         
                         StrGenTaskIDsList = vallist_from_dictlist(StrGenTasksList, 'TaskID')
@@ -365,35 +368,34 @@ class Server_T21():
                         self.logger.info('Too many tasks stock in task_list: %s'%StrategyID)
 
                 
-
-               
+                    
                 GenTaskIDList = vallist_from_dictlist(GenTasksList, 'TaskID')
-                ReTaskIDList = [] # filled with TaskID s that need to be restore status
+                ReTaskIDList = [] 
                 
-                for SGTaskDict in GenTasksList: # sql get tasks dict
+                for SGTaskDict in GenTasksList: 
                     TaskIns = Task.load_task_from_sqlresult(SGTaskDict)
                     StrategyID = SGTaskDict['StrategyID']
                     
-                    # record timelimit
-                    sign = self.server.hsetnx('task_timelimit', TaskIns.TaskID, time() + self.ConfigDict['TaskTimeout']) # 0, field existed, drop the operation
+                    sign = self.server.hsetnx('task_timelimit', TaskIns.TaskID, time() + self.ConfigDict['TaskTimeout']) 
                     
                     if not sign == 0:
                         self.server.lpush('task_list:%s'%StrategyID, TaskIns.get_json())
                     
                     else:
-                        GenTaskIDList = safe_remove(GenTaskIDList, TaskIns.TaskID) # remove the -2/-3 taskID s
-                        ReTaskIDList.append( TaskIns.TaskID ) # filled with 2/3 taskID s
+                        GenTaskIDList = safe_remove(GenTaskIDList, TaskIns.TaskID) 
+                        ReTaskIDList.append( TaskIns.TaskID ) 
                         
                         self.logger.warn('NOT GEN, task %s has already been existing in the system (hash task_timelimit), i.e. in status 2/3' % TaskIns.TaskID)
 
 
                 
                 if GenTaskIDList:
-                    self.execute_sql(sqline_w_1, GenTaskIDList)
+                    self.execute_sql(sqline_w_1, GenTaskIDList) 
                     
                 if ReTaskIDList:
-                    self.execute_sql(sqline_w_2, ReTaskIDList) # restore -3
-                    self.execute_sql(sqline_w_3, ReTaskIDList) # restore -2
+                    
+                    self.execute_sql(sqline_w_2, ReTaskIDList) 
+                    self.execute_sql(sqline_w_3, ReTaskIDList) 
                     
                 self.logger.info( '%s Tasks genereated for Strategy: %s' % (str(len(GenTaskIDList)), str(StrategyIDList)) )
                 
@@ -414,23 +416,23 @@ class Server_T21():
                 UserTasksKeyList = self.get_redis_keys('user_tasks:*')
                 for UserTasksKey in UserTasksKeyList:
                     
-                    TaskIDList = []
-                    UserTasksListLen = self.server.llen(UserTasksKey) # O(1)
+                    TaskIDList = [] 
+                    UserTasksListLen = self.server.llen(UserTasksKey) 
                     for _ in xrange(UserTasksListLen):
-                        TaskID = self.server.rpop(UserTasksKey)
+                        TaskID = self.server.rpop(UserTasksKey) 
                         TaskIDList.append(TaskID)
 
                     TaskIDList = eliminate_placeholders( eliminate_none_items(TaskIDList) )
                     User = UserTasksKey.split(':')[1]
-                    templist = zip([User]*len(TaskIDList), TaskIDList)
+                    templist = zip([User]*len(TaskIDList), TaskIDList) 
                     
                     AllUserTaskIDTupleList.extend(templist)
                     
-                    # TEST
+                    
                     print AllUserTaskIDTupleList
                     
                 if AllUserTaskIDTupleList:
-                    self.execute_sql(sqline, AllUserTaskIDTupleList) # write processor to table Tasks
+                    self.execute_sql(sqline, AllUserTaskIDTupleList) 
                     
                 self.logger.info('update task status and processor for tasks%s'%str(AllUserTaskIDTupleList))
                 
@@ -447,30 +449,30 @@ class Server_T21():
         sqline_w_2 = 'update Tasks set TaskStatus = -5 where TaskID = %s;'
         
         try:
-            ProcessedTaskDictList = [] # [TaskDict, ...], prepare for upload
+            ProcessedTaskDictList = [] 
             
             pipe = self.server.pipeline()
             pipe.multi()
             for _ in xrange(self.ConfigDict['UploadTaskBatchSize']):
                 pipe.rpop('processed_task_list')
-            ProcessedTaskJsonList = eliminate_placeholders(eliminate_none_items( pipe.execute() )) # may have None, as BatchSize is 5, but only 2 items left
+            ProcessedTaskJsonList = eliminate_placeholders(eliminate_none_items( pipe.execute() )) 
             
-            pipe = self.server.pipeline()
+            pipe = self.server.pipeline()  
             pipe.multi()
             for ProcessedTaskJson in ProcessedTaskJsonList:
                 ProcessedTaskIns = Task.load_task(ProcessedTaskJson)
                 
                 if self.server.hget('task_timelimit', ProcessedTaskIns.TaskID):
-                    ProcessedTaskDictList.append(ProcessedTaskIns.get_sgdict()) # construct TaskDict upload list
+                    ProcessedTaskDictList.append(ProcessedTaskIns.get_sgdict()) 
                     pipe.hdel('task_timelimit', ProcessedTaskIns.TaskID)
                     
                 else:
-                    # rec PTask expired
+                    
                     self.logger.info('drop a received expired task: %s'%str(ProcessedTaskIns.TaskID))
                     
             pipe.execute()
             
-            if ProcessedTaskDictList: # else: all processed tasks are expired
+            if ProcessedTaskDictList: 
                 
                 TaskIDList = vallist_from_dictlist(ProcessedTaskDictList, 'TaskID', eli_none= False)
                 StrategyIDList = vallist_from_dictlist(ProcessedTaskDictList, 'StrategyID', eli_none= False)
@@ -498,26 +500,22 @@ class Server_T21():
         sqline_w = 'insert into Tasks (StrategyID, ParentID, TaskType, TaskStatus, TaskContent, Encoding, AdditionParams, Priority) values (%s, %s, %s, -1, %s, %s, %s, %s)'
         
         try:
-            # get new tasks
-            NewTaskDictList = [] # [TaskDict, ...], prepare for upload
+            
+            NewTaskDictList = [] 
            
             pipe = self.server.pipeline()
             pipe.multi()
             pipe.zrange('new_task_sset', 0, self.ConfigDict['UploadTaskBatchSize'] - 1).zremrangebyrank('new_task_sset', 0, self.ConfigDict['UploadTaskBatchSize'] - 1)
             NewTaskJsonList, _ = pipe.execute()
-            NewTaskJsonList = eliminate_placeholders(eliminate_none_items( NewTaskJsonList )) # may have None, as BatchSize is 5, but only 2 items left
+            NewTaskJsonList = eliminate_placeholders(eliminate_none_items( NewTaskJsonList )) 
     
-            # upload new tasks
-            pipe = self.server.pipeline()
-            pipe.multi()
             for NewTaskJson in NewTaskJsonList:
                 NewTaskIns = Task.load_task(NewTaskJson)
                 NewTaskDictList.append(NewTaskIns.get_sgdict())
             
-            pipe.execute()
+            
             
             if NewTaskDictList:
-                # write Tasks
                 StrategyIDList = vallist_from_dictlist(NewTaskDictList, 'StrategyID', eli_none= False)
                 ParentIDList = vallist_from_dictlist(NewTaskDictList, 'ParentID', eli_none= False)
                 TaskTypeList = vallist_from_dictlist(NewTaskDictList, 'TaskType', eli_none= False)
@@ -589,6 +587,7 @@ class Server_T21():
         self.start_generate_user_infos_thread()
         self.start_generate_user_strategies_thread() 
      
+
         self.start_generate_strategies_thread()
         self.start_generate_tasks_thread()
         
@@ -599,6 +598,7 @@ class Server_T21():
     
     
 if __name__ == '__main__':
+
     Server_T21_Ins = Server_T21.from_default()
     Server_T21_Ins.start_threads()
 

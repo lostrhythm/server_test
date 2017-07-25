@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 '''
 Created on 2017年6月19日
 
@@ -11,10 +11,10 @@ from logging import handlers
 
 def get_logger(LOG_FILE_NAME = 'test', KeepRecord = False):    
     fmt = '%(asctime)s - %(filename)s:%(lineno)s [%(name)s] %(message)s'  
-    formatter = logging.Formatter(fmt)   # 实例化formatter  
+    formatter = logging.Formatter(fmt)   
     
     
-    logger = logging.getLogger(LOG_FILE_NAME)    # 获取名为tst的logger
+    logger = logging.getLogger(LOG_FILE_NAME)    
     logger.setLevel(logging.DEBUG)
     
     '''handlers'''
@@ -23,14 +23,14 @@ def get_logger(LOG_FILE_NAME = 'test', KeepRecord = False):
     logger.addHandler(console_handler)
     
     if KeepRecord:
-        if not os.path.isdir('./logs'): # when run the spider in root dir, the logs dir will also be created there
+        if not os.path.isdir('./logs'): 
             os.mkdir('./logs')
             
         LOG_FILE = './logs/' + LOG_FILE_NAME + '.log' 
         
-        file_handler = handlers.RotatingFileHandler(LOG_FILE, maxBytes = 1024*1024, backupCount = 5) # 实例化handler  
-        file_handler.setFormatter(formatter)      # 为handler添加formatter   
-        logger.addHandler(file_handler)      # 为logger添加handler
+        file_handler = handlers.RotatingFileHandler(LOG_FILE, maxBytes = 1024*1024, backupCount = 5) 
+        file_handler.setFormatter(formatter)      
+        logger.addHandler(file_handler)      
     ''''''
         
     return logger

@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 '''
 Created on 2017年6月19日
 
@@ -10,7 +10,7 @@ import copy
 from utils.data_operations import do_split
 from log.log import get_logger
 logger = get_logger('strategy')
-
+
 
 class Strategy():
     def __init__(self, StrategyID = 'TEST', Timeout = 0, WaitTime = 1, RetryTime = 3, AdditionParams = {}, Encoding = 'utf-8', FragmentalUpload = False, FragmentalAmount = 5, ContentException = [], CookieUse = False):
@@ -35,13 +35,13 @@ class Strategy():
         WaitTime = StrategyDict['WaitTime']
         RetryTime = StrategyDict['RetryTime']
         
-        AdditionParams = json.loads(StrategyDict.get('AdditionParams') or '{}', encoding = LocalEncoding) # json(json) -> dict(dict)
-        Encoding = StrategyDict.get('Encoding') or LocalEncoding # may be automatically gotten from response headers
+        AdditionParams = json.loads(StrategyDict.get('AdditionParams') or '{}', encoding = LocalEncoding) 
+        Encoding = StrategyDict.get('Encoding') or LocalEncoding 
         FragmentalUpload = StrategyDict.get('FragmentalUpload') or False
         FragmentalAmount = StrategyDict.get('FragmentalAmount') or 5
         ContentException = StrategyDict.get('ContentException') or []
         CookieUse = StrategyDict.get('CookieUse') or False
-        # TODO: _valid_TaskType _valid_TaskStatus?
+        
         
         StrategyIns = cls(StrategyID, Timeout, WaitTime, RetryTime, AdditionParams, Encoding, FragmentalUpload, FragmentalAmount, ContentException, CookieUse)
         return StrategyIns
@@ -56,13 +56,12 @@ class Strategy():
         WaitTime = SGStrategyDict['WaitTime']
         RetryTime = SGStrategyDict['RetryTime']
 
-
-        AdditionParams = json.loads(SGStrategyDict.get('AdditionParams') or '{}', encoding = LocalEncoding) # '{}' -> {}
+        AdditionParams = json.loads(SGStrategyDict.get('AdditionParams') or '{}', encoding = LocalEncoding) 
         Encoding = SGStrategyDict.get('Encoding') or LocalEncoding
-        FragmentalUpload = bool(SGStrategyDict.get('FragmentalUpload') or 0) # T/F
+        FragmentalUpload = bool(SGStrategyDict.get('FragmentalUpload') or 0) 
         FragmentalAmount = SGStrategyDict.get('FragmentalAmount') or 5
-        ContentException = do_split(SGStrategyDict.get('ContentException')) # None/'' -> []
-        CookieUse = bool(SGStrategyDict.get('CookieUse') or 0) # T/F
+        ContentException = do_split(SGStrategyDict.get('ContentException')) 
+        CookieUse = bool(SGStrategyDict.get('CookieUse') or 0) 
         
         StrategyIns = cls(StrategyID, Timeout, WaitTime, RetryTime, AdditionParams, Encoding, FragmentalUpload, FragmentalAmount, ContentException, CookieUse)
         return StrategyIns
@@ -72,8 +71,8 @@ class Strategy():
         LocalEncoding = 'utf-8'
         
         StrategyDict = copy.deepcopy(self.__dict__)
-        StrategyDict['AdditionParams'] = json.dumps(self.__dict__['AdditionParams'], encoding = LocalEncoding) #  dict(dict) -> dict(json)
-        StrategyJson = json.dumps(StrategyDict, encoding = LocalEncoding) # dict(json) -> json(json)
+        StrategyDict['AdditionParams'] = json.dumps(self.__dict__['AdditionParams'], encoding = LocalEncoding) 
+        StrategyJson = json.dumps(StrategyDict, encoding = LocalEncoding) 
         return StrategyJson
     
     
@@ -89,4 +88,5 @@ if __name__ == '__main__':
     s_1_json = s_1.get_json()
     print s_1.__dict__
     print repr(s_1_json)
+    
     
